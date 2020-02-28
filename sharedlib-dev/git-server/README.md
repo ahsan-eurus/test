@@ -1,0 +1,1 @@
+This directory is use to store repositories data that will be used by the local git server.

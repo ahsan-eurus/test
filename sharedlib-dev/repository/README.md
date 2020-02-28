@@ -1,0 +1,1 @@
+This directory is use to store git repository files for local shared library development.

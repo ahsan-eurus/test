@@ -1,0 +1,8 @@
+{
+    "libs": [{
+        "name": "shared-library",
+        "remote": "ssh://git@169.254.170.4:22/git-server/repos/repository.git",
+        "credentialsId": "shared-libraries-deploy-key",
+        "version": "master"
+    }]
+}

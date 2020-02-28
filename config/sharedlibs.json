@@ -1,0 +1,8 @@
+{
+    "libs": [{
+        "name": "shared-library",
+        "remote": "https://github.com/bam-labs/asimov.git",
+        "credentialsId": "github-token",
+        "version": "ops21"
+    }]
+}

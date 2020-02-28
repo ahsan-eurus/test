@@ -1,0 +1,133 @@
+version: "2"
+networks:
+  # This special network is configured so that the local metadata
+  # service can bind to the specific IP address that ECS uses
+  # in production
+  credentials_network:
+      driver: bridge
+      ipam:
+          config:
+              - subnet: "169.254.170.0/24"
+                gateway: 169.254.170.1
+
+services:
+  # This container vends credentials to your containers
+
+  git-server:
+    image: jkarlos/git-server-docker
+    depends_on:
+      - startup
+    #build: .
+    restart: always
+    container_name: git-server
+    ports:
+      - "2222:22"
+    networks:
+      credentials_network:
+        ipv4_address: "169.254.170.4"
+    volumes:
+    - ssh-keys:/git-server/keys
+    - ./sharedlib-dev/git-server:/git-server/repos
+
+  gitwatch:
+    build: ./sharedlib-dev/Docker/Git-watch
+    depends_on:
+      - startup
+    networks:
+        credentials_network:
+            ipv4_address: "169.254.170.5"
+    volumes:
+      - git-repo:/repo
+      - ssh-keys:/root/.ssh/
+    command:
+      - "-r"
+      - "origin"
+      - "-b"
+      - "master"
+      - "/repo"
+
+  ecs-local-endpoints:
+    # The Amazon ECS Local Container Endpoints Docker Image
+    image: amazon/amazon-ecs-local-container-endpoints
+    depends_on:
+      - gitwatch
+    volumes:
+      # Mount /var/run so we can access docker.sock and talk to Docker
+      - /var/run:/var/run
+      # Mount the shared configuration directory, used by the AWS CLI and AWS SDKs
+      # On Windows, this directory can be found at "%UserProfile%\.aws"
+      - $HOME/.aws/:/home/.aws/
+    environment:
+      # define the home folder; credentials will be read from $HOME/.aws
+      HOME: "/home"
+      # You can change which AWS CLI Profile is used
+      AWS_PROFILE: "${AWS_PROFILE}"
+    networks:
+      credentials_network:
+        # This special IP address is recognized by the AWS SDKs and AWS CLI
+        ipv4_address: "169.254.170.2"
+
+    # Here we reference the application container that we are testing
+    # You can test multiple containers at a time, simply duplicate this section
+    # and customize it for each container, and give it a unique IP in 'credentials_network'.
+  app:
+    user: root # We run as root locally to avoid access denied errors on the volume mounts, production uses 'jenkins' user
+    ports:
+      - 8080:8080
+    build:
+          # Build an image from the Dockerfile in the current directory
+      context: .
+      dockerfile: images/master/Dockerfile
+    depends_on:
+        - ecs-local-endpoints
+    networks:
+        credentials_network:
+            ipv4_address: "169.254.170.3"
+    environment:
+      DOCKER_COMPOSE: "1"
+      AWS_DEFAULT_REGION: "us-east-1"
+      AWS_REGION: "us-east-1"
+      AWS_CONTAINER_CREDENTIALS_RELATIVE_URI: "/creds"
+      PIPELINE_SHARED_LIB_REMOTE: "https://github.com/bam-labs/asimov.git"
+      PIPELINE_SHARED_LIB_REMOTE_VER: "ops21"
+      JENKINS_URL: "http://169.254.170.3:8080"
+      TERRAFORM_WORKSPACE: "siq-dev"
+      SLAVE_IMAGE: "jenkinsci/jnlp-slave"
+    volumes:
+      - "./jobs:/var/jenkins_home/workspace/seed-job/jenkins/jobs/"
+      - "./config:/var/jenkins_home/workspace/seed_cloud/jenkins/config/"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - ssh-keys:/var/jenkins_home/.ssh/
+
+  ssh-keygen:
+    build: ./sharedlib-dev/Docker/ssh-keygen
+    volumes:
+      - ssh-keys:/root/.ssh/
+    networks:
+      credentials_network:
+        ipv4_address: "169.254.170.6"
+
+  startup:
+    depends_on:
+      - ssh-keygen
+    build: ./sharedlib-dev/Docker/startup
+    volumes:
+      - "./sharedlib-dev/repository:/jenkins/sharedlib-dev/repository"
+      - "./sharedlib-dev/git-server:/jenkins/sharedlib-dev/git-server"
+    networks:
+      credentials_network:
+        ipv4_address: "169.254.170.7"
+
+volumes:
+  git-repo:
+    driver: local
+    driver_opts:
+      type: none
+      device: $PWD/${REPOS_PATH}
+      o: bind
+  ssh-keys:
+    driver: local
+    driver_opts:
+      type: none
+      device: $PWD/${KEY_PATH}
+      o: bind

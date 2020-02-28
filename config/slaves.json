@@ -1,0 +1,55 @@
+{
+  "clouds": [
+    {
+      "name":"ECS-SLAVES-EC2",
+      "label": "jnlp-slave-ec2",
+      "memory": 4096,
+      "taskrole": "arn:aws:iam::270996056496:role/jenkins-ecr-siqlabs",
+      "logDriver": "sumologic",
+      "logDriverOptions": [
+        {
+          "key": "sumo-url",
+          "value": "https://endpoint1.collection.us2.sumologic.com/receiver/v1/http/ZaVnC4dhaV2MKMl5RkuemJjTJisQDrDGQPCBFQrPz9oX6Mbh_T7jLP26MYCue-A1gMgRjm70DdtuEfnkdUI66oNxJmWi2GzSt9rbyh3SUTyRFPy0UlTcvg=="
+        }
+      ]
+    },
+    {
+      "name":"ECS-SLAVES-TF11_13",
+      "label": "jnlp-tf11_13",
+      "image": "270996056496.dkr.ecr.us-east-1.amazonaws.com/jenkins-slave:tf11.13",
+      "memory": 500,
+      "privileged": true
+    },
+    {
+      "name":"ECS-FUZION-RFS",
+      "label": "fuzion-rfs",
+      "image": "270996056496.dkr.ecr.us-east-1.amazonaws.com/fuzion-slave:0.0.8",
+      "memory": 4096,
+      "cpu": 1024,
+      "logDriver": "sumologic",
+      "logDriverOptions": [
+        {
+          "key": "sumo-url",
+          "value": "https://endpoint1.collection.us2.sumologic.com/receiver/v1/http/ZaVnC4dhaV2MKMl5RkuemJjTJisQDrDGQPCBFQrPz9oX6Mbh_T7jLP26MYCue-A1gMgRjm70DdtuEfnkdUI66oNxJmWi2GzSt9rbyh3SUTyRFPy0UlTcvg=="
+        }
+      ]
+    },
+    {
+      "name":"ECS-SLAVES-FARGATE",
+      "label": "jnlp-slave-fargate",
+      "memory": 512,
+      "cpu": 256,
+      "executionRole": "arn:aws:iam::270996056496:role/ECSDefaultExecutionRole",
+      "launchType": "FARGATE",
+      "networkMode": "awsvpc",
+      "subnets": "subnet-09158f41fce709511,subnet-0824223997b1eaa5b,subnet-07b1d5f061a5b29ea",
+      "securityGroups": "sg-0e488cc7961461b9e"
+    },
+    {
+      "name":"ECS-SLAVES-EC2",
+      "label": "jnlp-slave-ec2",
+      "subnets": "subnet-0b94795437cabf27bsubnet-017c098bb46c4f853,subnet-0d321a95f24c7ac41",
+      "securityGroups": "sg-087a136ad667ae113"
+    }
+  ]
+}
